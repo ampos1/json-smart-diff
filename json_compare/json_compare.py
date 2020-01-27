@@ -2,102 +2,101 @@ import json
 import sys
 import tabulate
 
-file1 = sys.argv[1]
-file2 = sys.argv[2]
+file_1 = sys.argv[1]
+file_2 = sys.argv[2]
 
         
-def flatten_json(y):
-    out = {}
+def flatten_json(nested_json):
+    flattened_json = {}
 
-    def flatten(x, name=''):
-        if type(x) is dict:
-            for a in x:
-                flatten(x[a], name + a + '_')
-        elif type(x) is list:
+    def flatten(json_object, name=''):
+        if type(json_object) is dict:
+            for key in json_object:
+                flatten(json_object[key], name + key + '_')
+        elif type(json_object) is list:
             i = 0
-            for a in x:
-                flatten(a, name + str(i) + '_')
+            for key in json_object:
+                flatten(key, name + str(i) + '_')
                 i += 1
         else:
-            out[name[:-1]] = x
-
-    flatten(y)
-    return out
-
-
-def processFile(file):
-    with open(file,'r') as fileData:
-        fileString = fileData.read()
-        fileDictionary = json.loads(fileString)
-        return flatten_json(fileDictionary)
+            flattened_json[name[:-1]] = json_object
+    flatten(nested_json)
+    return flattened_json
 
 
-def compareKeys(dict1, dict2):
-    keyTup = ([],[],[])
-    for k1 in dict1:
-        if k1 in dict2:
-            keyTup[0].append(k1)
+def process_input(file):
+    with open(file,'r') as file_bytes:
+        file_strings = file_bytes.read()
+        file_dictionary = json.loads(file_strings)
+    return flatten_json(file_dictionary)
+
+
+def compare_keys(dict_1, dict_2):
+    key_tup = ([],[],[])
+    for key in dict_1:
+        if key in dict_2:
+            key_tup[0].append(key)
             continue
-        keyTup[1].append(k1)
+        key_tup[1].append(key)
     
-    for k2 in dict2:
-        if k2 not in dict1:
-            keyTup[2].append(k2)
+    for key in dict_2:
+        if key not in dict_1:
+            key_tup[2].append(key)
 
-    return keyTup
+    return key_tup
 
 
-def printUniqueKeys(uniqueKeys):
-    if len(uniqueKeys[0]) == 0 & len(uniqueKeys[1]) == 0:
-        print('\n%s and %s have identical keys!' %(file1,file2))
+def print_unique_keys(unique_keys):
+    if len(unique_keys[0]) == 0 and len(unique_keys[1]) == 0:
+        print('\n%s and %s have identical keys!' %(file_1,file_2))
         return
     print("\nTable of unique keys:\n")
-    rows = max(len(uniqueKeys[0]),len(uniqueKeys[1]))
-    keyList = []
+    required_rows = max(len(unique_keys[0]),len(unique_keys[1]))
+    all_rows = []
 
-    for i in range(0,rows):
-        emptyArr = [None]*2
-
-        try:
-            emptyArr[0] = uniqueKeys[0][i]
-        except IndexError:
-            emptyArr[0] = ""
+    for i in range(required_rows):
+        row_of_unique_keys = [None]*2
 
         try:
-            emptyArr[1] = uniqueKeys[1][i]
+            row_of_unique_keys[0] = unique_keys[0][i]
         except IndexError:
-            emptyArr[1] = ""
-        
-        keyList.append(emptyArr)
+            row_of_unique_keys[0] = ""
 
-    print(tabulate.tabulate(keyList,headers=[file1,file2],tablefmt="presto"))
+        try:
+            row_of_unique_keys[1] = unique_keys[1][i]
+        except IndexError:
+            row_of_unique_keys[1] = ""
+        
+        all_rows.append(row_of_unique_keys)
+
+    print(tabulate.tabulate(all_rows,headers=[file_1,file_2],tablefmt="presto"))
         
 
-def compareValues(dict1, dict2, sharedKeys):
-    if len(sharedKeys) == 0:
-        print("%s and %s have no common keys" %(file1,file2))
+def compare_values(dict_1, dict_2, shared_keys):
+    if len(shared_keys) == 0:
+        print("%s and %s have no common keys" %(file_1,file_2))
         return 
        
     print("\nTable of inconsistent key value pairs:\n")
-    keyList = []
-    for key in sharedKeys:
-        if dict1[key] != dict2[key]:
-            tempList = []
-            tempList.append(key)
-            tempList.append(dict1[key])
-            tempList.append(dict2[key])
-            keyList.append(tempList)
+    all_rows = []
+    for key in shared_keys:
+        if dict_1[key] != dict_2[key]:
+            row_of_shared_keys = []
+            row_of_shared_keys.append(key)
+            row_of_shared_keys.append(dict_1[key])
+            row_of_shared_keys.append(dict_2[key])
+            all_rows.append(row_of_shared_keys)
     
-    print(tabulate.tabulate(keyList, headers=["key",file1,file2],tablefmt="fancy_grid"))
+    print(tabulate.tabulate(all_rows, headers=["key",file_1,file_2],tablefmt="fancy_grid"))
     
 
 
-dict1 = processFile(file1)
-dict2 = processFile(file2)
-keys = compareKeys(dict1,dict2)
-uniqueKeys = [keys[1],keys[2]]
-printUniqueKeys(uniqueKeys)
-compareValues(dict1,dict2,keys[0])
+dict_1 = process_input(file_1)
+dict_2 = process_input(file_2)
+keys = compare_keys(dict_1,dict_2)
+unique_keys = [keys[1],keys[2]]
+print_unique_keys(unique_keys)
+compare_values(dict_1,dict_2,keys[0])
             
              
 
